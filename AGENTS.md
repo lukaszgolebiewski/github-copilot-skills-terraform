@@ -1,93 +1,79 @@
-# AGENTS.md - GitHub Copilot Skills for Terraform Azure
+# AGENTS.md – GitHub Copilot Skills for Terraform Azure Blueprint
 
-This file provides context and instructions for AI coding agents working with this repository.
+Context and instructions for AI coding agents working with this repository.
 
 ## Repository Overview
 
-This is a **template/reference repository** for GitHub Copilot agents and skills focused on Terraform Azure operations. It provides reusable agent definitions and skills that can be copied into actual infrastructure repositories.
+This repo now contains a **Terraform Azure blueprint** plus GitHub Copilot agents and skills. Use it as the source of truth for the blueprint under `blueprint/`, environment settings under `settings/`, and Copilot customizations under `.github/`.
 
-This repository does NOT contain actual Terraform infrastructure code. It contains:
-- GitHub Copilot agent definitions (`.github/agents/`)
-- Reusable skills for Terraform operations (`.github/skills/`)
-- Instructions for configuring Copilot in Terraform projects
-- MCP server configuration example (`.vscode/mcp.json`)
-
-## Repository Structure
-
-### Actual Structure
+## Repository Structure (current)
 ```
 .github/
-├── agents/                           # GitHub Copilot agent definitions
-│   ├── azure-architecture-reviewer.agent.md
-│   ├── terraform-coordinator.agent.md
-│   ├── terraform-module-expert.agent.md
-│   ├── terraform-provider-upgrade.agent.md
-│   └── terraform-security.agent.md
-├── skills/                           # Reusable skills
-│   ├── azure-architecture-review/
-│   ├── azure-verified-modules/
-│   ├── github-actions-terraform/
-│   ├── terraform-provider-upgrade/
-│   └── terraform-security-scan/
-└── copilot-instructions.md           # Global Copilot instructions
-.vscode/
-└── mcp.json                          # MCP server configuration
-AGENTS.md                             # This file
-README.md                             # Repository documentation
+├── agents/                         # Copilot agent definitions
+├── skills/                         # Reusable skills
+├── copilot-instructions.md         # Global Copilot instructions
+.vscode/mcp.json                    # MCP server configuration
+AGENTS.md                           # This file
+README.md                           # Repo overview
+blueprint/                          # Terraform blueprint source
+├── bootstrap/                      # Foundational RG, storage, Key Vault, DevOps setup
+├── core/                           # Subscription/core resources (RGs, KV, Log Analytics, identities)
+├── storage/                        # Storage account workloads
+├── adf/                            # Azure Data Factory
+├── batch-account/                  # Batch accounts + schedules
+├── linux-web-app/                  # App Service (Linux) workloads
+├── ms-foundry/                     # Foundry-related IaC
+├── modules/                        # Reusable modules (adf, storage, app services, batch, kv, la, search, foundry, appinsights)
+├── helpers/, local-pipeline/, ml-studio/, templates/  # Supporting pieces
+settings/                           # tfsettings per environment (dev/snd/test/prod) plus README
 ```
 
-### Expected Structure in Target Infrastructure Repositories
+## Using the Blueprint
+- Run Terraform from the appropriate `blueprint/<workload>` folder; import and tfplan files are present for reference.
+- Per-workload `import.tfsettings-*.tf` files define tfsettings inputs; environment overlays live in `settings/<env>/`.
+- Keep state remote, encrypted, and locked (Azure storage + blob lease).
 
-When using these agents/skills in an actual Terraform repository, the structure should be:
-```
-infra/
-├── modules/                    # Custom reusable modules
-│   └── my-module/
-│       ├── main.tf
-│       ├── variables.tf
-│       ├── outputs.tf
-│       ├── versions.tf
-│       ├── README.md
-│       └── examples/           # Working examples INSIDE the module
-│           └── basic/
-│               ├── main.tf
-│               ├── variables.tf
-│               ├── outputs.tf
-│               ├── terraform.tfvars.example  # Example values
-│               ├── example.auto.tfvars       # Auto-loaded overrides
-│               └── README.md
-├── environments/               # Environment-specific configurations
-│   ├── dev/
-│   ├── staging/
-│   └── prod/
-└── shared/                     # Shared resources (state, networking)
-```
+## Naming & Tagging (apply to all resources)
+Each and every module contain its own naming convention for specific resources.
+Examples: rg-pada-iadwh-cross-selling-snd, id-pada-iadwh-cross-selling-snd-lwa, bapadaiadwhadfsnd
+
+## Security Requirements
+1) Prefer managed identity; 2) OIDC/federated creds for CI/CD; 3) Service principal w/ cert; 4) SP w/ secret (last resort).
+- No hardcoded secrets; use Key Vault data sources.
+- Enforce encryption at rest + TLS 1.2+, private endpoints for PaaS.
+
+## Terraform Practices
+- `terraform init` → `terraform validate` → `terraform fmt -recursive` → `terraform plan -out=tfplan` → `terraform apply tfplan`.
+- Pin provider versions (`~>`), follow HashiCorp style guide.
+- Use Azure Verified Modules as reference patterns; ensure modules include examples, variables with descriptions, outputs, and README.
+
+## Agents (in .github/agents)
+- `terraform-coordinator` (routing), `terraform-module-expert`, `terraform-security`, `azure-architecture-reviewer`, `terraform-provider-upgrade`.
+
+## Skills (in .github/skills)
+- `azure-architecture-review`, `azure-verified-modules`, `github-actions-terraform`, `terraform-provider-upgrade`, `terraform-security-scan`.
+
+## MCP Tooling
+- HashiCorp Terraform MCP: `search_modules`, `get_module_details`, `search_providers`, `get_provider_details`.
+- Azure MCP: `azureterraformbestpractices get` **before any Azure TF code**, `get_bestpractices` (general/azurefunctions/static-web-app/coding-agent), `azure_resources` for ARG queries.
+
+## Common Tasks
+- Add/modify resources in the relevant `blueprint/<workload>/` folder; include required tags and naming.
+- For new modules, place code under `blueprint/modules/<module>/` and include an `examples/` subdir if expanded.
+- Use environment tfsettings from `settings/<env>/` when planning/applying per environment.
 
 ### Naming Conventions
 
 **Resources follow this pattern:**
-```
-{resource-type}-{workload}-{environment}-{region}-{instance}
-```
 
 Examples:
-- `rg-webapp-prod-eastus-001` (Resource Group)
-- `st-appdata-prod-eastus-001` (Storage Account)
-- `kv-secrets-prod-eastus-001` (Key Vault)
-- `vm-web-prod-eastus-001` (Virtual Machine)
+- `rg-pada-iadwh-adf-snd` (Resource Group)
+- `sapadaiadwhadfadlssnd` (Storage Account)
+- `kv-pada-iadwh-adf-snd` (Key Vault)
+- `lwa-pada-iadwh-cross-selling-snd` (Web App)
 
 ### Required Tags
-
-All resources MUST include these tags:
-```hcl
-tags = {
-  environment = "dev|staging|prod"
-  project     = "project-name"
-  owner       = "team-or-individual"
-  cost-center = "cost-allocation-code"
-  managed-by  = "terraform"
-}
-```
+No tags required yes
 
 ## Security Requirements
 
@@ -169,52 +155,11 @@ terraform plan -out=tfplan
 terraform apply tfplan
 ```
 
-### CI/CD Pipeline
-- Push to `main` triggers plan on all environments
-- Pull requests show plan output as comments
-- Manual approval required for production applies
-- Drift detection runs daily on schedule
-
 ## Common Tasks
-
-### Adding a New Resource
-1. Check for Azure Verified Module first
-2. Add resource to appropriate environment folder
-3. Include all required tags
-4. Run `terraform validate` and `terraform plan`
-5. Create pull request for review
-
-### Modifying Existing Resources
-1. Review current state: `terraform state show <resource>`
-2. Make changes in Terraform files
-3. Generate plan: `terraform plan -out=tfplan`
-4. Review for unexpected changes
-5. Apply after approval
-
-### Destroying Resources
-1. Generate destroy plan: `terraform plan -destroy`
-2. Review carefully - destruction is permanent
-3. Require multi-person approval for production
-4. Backup state before applying
+To be added
 
 ## Troubleshooting
-
-### Common Issues
-
-**State Lock Error:**
-```bash
-terraform force-unlock <lock-id>
-```
-
-**Provider Version Mismatch:**
-```bash
-terraform init -upgrade
-```
-
-**Resource Already Exists:**
-```bash
-terraform import <resource_address> <azure_resource_id>
-```
+To be added
 
 ## MCP Server Integration
 
