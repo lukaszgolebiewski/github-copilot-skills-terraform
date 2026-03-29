@@ -108,20 +108,17 @@ When creating new Terraform modules, you MUST follow these rules:
 **Recommended structure for new modules (based on Azure Verified Modules patterns):**
 
 ```
-infra/modules/{module-name}/
-├── main.tf             # Resource definitions
-├── variables.tf        # Input variables with validation
-├── outputs.tf          # Output values
-├── versions.tf         # Provider requirements
-├── README.md           # Module documentation
-└── examples/           # Working examples (REQUIRED)
-    └── basic/
-        ├── main.tf
-        ├── variables.tf
-        ├── outputs.tf
-        ├── terraform.tfvars.example  # Example configuration
-        ├── example.auto.tfvars       # Auto-loaded overrides
-        └── README.md                 # Example usage guide
+blueprint/modules/{module-name}/
+├──account.tf                     # Main resource definitions
+├──── main.tf                     # Resource definitions
+├──── variables.tf                # Input variables with validation
+├──── outputs.tf                  # Output values
+├──── private-endpoint.tf         # Private endpoint definitions
+├──── access.tf                   # RBAC and access control
+├──services.tf                    # Additional services (e.g., containers in storage account, pools in batch account)
+├──── main.tf                     # Resource definitions
+├──── variables.tf                # Input variables with validation
+├──── outputs.tf                  # Output values
 ```
 
 **Examples Directory Requirements:**
