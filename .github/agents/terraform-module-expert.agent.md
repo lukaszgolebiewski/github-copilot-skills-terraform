@@ -122,11 +122,6 @@ blueprint/modules/{module-name}/
 ```
 
 **Examples Directory Requirements:**
-- **REQUIRED** for all custom modules
-- Located within the module directory as `examples/`
-- Each example is a complete, deployable configuration
-- Include multiple examples for different use cases (basic, advanced, etc.)
-- Users copy `terraform.tfvars.example` to `terraform.tfvars` and customize
 
 **Always explain to the user:**
 - This structure is recommended by Azure Verified Modules (AVM) and repository standards
@@ -190,7 +185,7 @@ module "storage_account" {
 ✅ **DO create real resources (learning from AVM patterns):**
 ```hcl
 # GOOD - Actual resource definition implementing AVM best practices
-resource "azurerm_storage_account" "this" {
+resource "azurerm_storage_account" "storage_account" {
   name                = var.name
   location            = var.location
   resource_group_name = var.resource_group_name
