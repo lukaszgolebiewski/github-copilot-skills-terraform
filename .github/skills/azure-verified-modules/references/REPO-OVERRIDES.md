@@ -9,9 +9,10 @@ Scope: Use these overrides when applying the `azure-verified-modules` skill in t
 
 ## Required Repository-Specific Rules
 - **Skip terraform requirements and provider version blocks** in outputs/examples for this skill.
+- **Do not create README.md or examples** when producing override snippets; keep guidance minimal and inline.
 - **No tags guidance**: do not add or mention tags unless the existing module already defines them; avoid introducing new tag requirements in overrides.
 - **Resource naming:** never use `this`; use the resource type or existing module naming pattern instead.
-- **Access control scope:** `access.tf` must only grant assignments to user-managed identities and Azure AD groups—no other principal types.
+- **Access control scope:** `access.tf` must be created and only grant assignments to user-managed identities and Azure AD groups—no other principal types.
 - **Managed identity reference:** ensure the main `main.tf` includes the user-managed identity reference consistent with other modules in the repo.
 - **Outputs:** by default expose only the main resource, e.g.:
 	```hcl
