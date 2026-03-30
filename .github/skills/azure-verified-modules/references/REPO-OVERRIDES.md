@@ -9,11 +9,40 @@ Scope: Use these overrides when applying the `azure-verified-modules` skill in t
 
 ## Required Repository-Specific Rules
 - **Skip terraform requirements and provider version blocks** in outputs/examples for this skill.
-- **Skip tags** unless the existing module already defines them; do not add new tags by default.
+- **No tags guidance**: do not add or mention tags unless the existing module already defines them; avoid introducing new tag requirements in overrides.
 - **Resource naming:** never use `this`; use the resource type or existing module naming pattern instead.
-- **Outputs:** always include the primary resource output (e.g., the main resource object/id) in module outputs.
-- **Private endpoints:** keep `private-endpoint.tf` with the private endpoint definition under the `accounts` folder (do not relocate/merge).
-- **Access control:** always include an `access.tf` that contains the groups general assignment.
+- **Access control scope:** `access.tf` must only grant assignments to user-managed identities and Azure AD groups—no other principal types.
+- **Managed identity reference:** ensure the main `main.tf` includes the user-managed identity reference consistent with other modules in the repo.
+- **Outputs:** by default expose only the main resource, e.g.:
+	```hcl
+	output "ai_searches" {
+		value = azurerm_search_service.ais_accounts
+	}
+	```
+- **Private endpoints:** keep `private-endpoint.tf` under the `accounts` folder and use the minimal pattern below (omit DNS unless required):
+	```hcl
+	resource "azurerm_private_endpoint" "endpoint" {
+		for_each            = var.public_access_enabled ? {} : { for k, v in var.ai_search_settings : k => v if v.sku_name != "free" }
+		name                = "pe-${var.project_shortname}-ais-${each.key}-${var.env_shortname}"
+		location            = var.region
+		resource_group_name = var.project_data.pe_resource_group_name
+		subnet_id           = var.project_data.subnet_id
+
+		private_service_connection {
+			name                           = "psc-${var.project_shortname}-ais-${each.key}-${var.env_shortname}"
+			private_connection_resource_id = azurerm_search_service.ais_accounts[each.key].id
+			is_manual_connection           = false
+			subresource_names              = [each.value.ip_configuration.subresource_name]
+		}
+
+		ip_configuration {
+			name               = each.value.ip_configuration.name
+			private_ip_address = each.value.ip_configuration.private_ip_address
+			subresource_name   = each.value.ip_configuration.subresource_name
+			member_name        = each.value.ip_configuration.member_name
+		}
+	}
+	```
 
 ## Consistency Checks
 - Before adding new guidance, verify it does not contradict these overrides or the current module layouts.
