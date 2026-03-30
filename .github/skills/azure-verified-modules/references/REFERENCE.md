@@ -24,15 +24,13 @@ When creating custom modules, use these templates learned from AVM patterns:
 ### main.tf - Define actual Azure resources
 
 ```hcl
-resource "azurerm_{resource_type}" "this" {
+resource "azurerm_{resource_type}" "{resource_type}" {
   name                = var.name
   location            = var.location
   resource_group_name = var.resource_group_name
   
   # Resource-specific configuration
   # Use dynamic blocks for optional nested blocks
-  
-  tags = merge(var.tags, { managed-by = "terraform" })
 }
 ```
 
@@ -69,29 +67,9 @@ variable "tags" {
 ### outputs.tf - Essential outputs
 
 ```hcl
-output "id" {
-  description = "The resource ID"
-  value       = azurerm_{resource_type}.this.id
-}
-
-output "name" {
-  description = "The resource name"
-  value       = azurerm_{resource_type}.this.name
-}
-```
-
-### versions.tf - Provider constraints
-
-```hcl
-terraform {
-  required_version = ">= 1.5.0"
-  
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = ">= 4.0, < 5.0"
-    }
-  }
+output "{resource_type}" {
+  description = "The resource {resource_type}"
+  value       = azurerm_{resource_type}.{resource_type}.id
 }
 ```
 
@@ -100,7 +78,7 @@ terraform {
 ### Storage Account Security Defaults
 
 ```hcl
-resource "azurerm_storage_account" "this" {
+resource "azurerm_storage_account" "storage_account" {
   name                = var.name
   resource_group_name = var.resource_group_name
   location            = var.location
@@ -207,7 +185,7 @@ module "storage_wrapper" {
 ✅ **DO learn patterns and implement resources directly:**
 ```hcl
 # This is what we want - actual resource using AVM patterns
-resource "azurerm_storage_account" "this" {
+resource "azurerm_storage_account" "storage_account" {
   name                = var.name
   resource_group_name = var.resource_group_name
   location            = var.location
