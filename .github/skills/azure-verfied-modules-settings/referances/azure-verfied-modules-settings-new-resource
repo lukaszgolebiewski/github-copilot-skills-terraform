@@ -1,0 +1,59 @@
+# azure-verfied-modules-settings-new-resource
+
+Focused guide to add a **new instance** of an existing AVM-inspired resource/module configuration in `settings/<env>/`.
+
+## Inputs to Collect
+- Environment(s): dev/snd/test/prod
+- Resource type & service folder (e.g., storage, acr, ai-search)
+- Resource group: new or reuse existing (check `core/resource-groups.tf`)
+- Identity: user-assigned or system MI (check `core/user-managed-identities.tf`)
+- Key Vault usage: secrets/keys/certs (check `core/kv.tf`)
+- Diagnostics: Log Analytics/App Insights (check `core/la.tf`, `core/app-ins.tf`)
+- Networking: VNet/subnet, private endpoints, DNS zones; required subresources
+- Tags: environment, project, owner, cost-center, managed-by
+
+## Repository Layout (env-scoped)
+- `settings/<env>/core/`
+  - `ad-groups.tf` — AAD group mappings if RBAC/ownership needed
+  - `resource-groups.tf` — define/reuse RGs
+  - `user-managed-identities.tf` — define/reuse UAIs for workloads
+  - `kv.tf` — secrets and access rules; add new secrets if needed
+  - `app-ins.tf` / `la.tf` — monitoring resources and links
+  - `main.tf` — shared locals, common data
+- `settings/<env>/<service>/` — service-specific resource definitions + imports
+- `settings/<env>/global/` — project/global locals, backend, feature toggles
+
+## Workflow
+1) **Study patterns**: Review `.github/skills/azure-verified-modules` (SKILL + references) for security defaults, validation, naming, outputs.
+2) **Assess existing env**: Inspect `settings/<env>/core/*.tf`, `global/*.tf`, and the target service folder for reuse opportunities (RG, MI, KV, diagnostics).
+3) **Plan placements**:
+   - Shared foundations go to `core/` (RGs, UAIs, KV entries, diagnostics, ad groups) only if missing.
+   - Service-specific config goes under the service folder (e.g., `storage/storage.tf`, `acr/acr.tf`).
+   - Avoid duplicating existing RG/KV/MI; extend maps/objects instead.
+4) **Private endpoints & IPs**:
+   - Check current PEs/IPs in the target env subnet (scan existing files or query Azure via MCP). Select next free IP; double-check uniqueness.
+5) **Implement with AVM-aligned defaults** (examples):
+   - Enforce `public_network_access_enabled = false` where applicable.
+   - `min_tls_version = "TLS1_2"`; `https_traffic_only_enabled = true` (storage/app services)
+   - Managed identity preferred; no hardcoded secrets; use Key Vault data sources.
+   - Diagnostics to Log Analytics; enable metrics/log categories per service.
+6) **Variables/outputs**: Add inputs/outputs as needed; keep descriptions and validation; ensure required tags.
+7) **Validate**: Run `terraform fmt -recursive` and `terraform validate` in the env folder; produce plan if required.
+
+## Good Practices (quick list)
+- Naming: `{type}-{workload}-{env}-{region}-{instance}`.
+- Tags: environment, project, owner, cost-center, managed-by.
+- Use existing RG/MI/KV where possible; avoid sprawl.
+- Prefer private endpoints; restrict public network access.
+- Use `for_each` for maps of instances in service files.
+- Keep plan artifacts per env (dev/snd/test/prod) out of edits unless regenerating.
+
+## MCP / External Checks
+- Use Azure MCP servers to confirm free private IPs and existing PEs when uncertain.
+- Use Terraform MCP tools to recall AVM patterns or provider docs.
+
+## Template Steps (per resource)
+- Update `core` only if new shared asset is required (RG/MI/KV/diag/ad group).
+- Add/extend map/object in the target service `*.tf` for the new instance.
+- Wire variables/defaults in `variables.tf`; outputs in `outputs.tf` if needed.
+- Ensure imports (`import.tfsettings-*.tf`) remain correct.
