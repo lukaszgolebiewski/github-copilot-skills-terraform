@@ -5,6 +5,7 @@ Focused guide to add a **new instance** of an existing AVM-inspired resource/mod
 ## Inputs to Collect
 - Environment(s): dev/snd/test/prod
 - Resource type & service folder (e.g., storage, acr, ai-search)
+- Add groups: new or reuse existing (check `core/ad-groups.tf`)
 - Resource group: new or reuse existing (check `core/resource-groups.tf`)
 - Identity: user-assigned or system MI (check `core/user-managed-identities.tf`)
 - Key Vault usage: secrets/keys/certs (check `core/kv.tf`)
