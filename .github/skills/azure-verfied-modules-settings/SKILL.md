@@ -16,7 +16,7 @@ Use this skill to add or update settings for resources that follow Azure Verifie
 - verify private endpoint IP allocations before committing changes
 - keep naming, tagging, identity, networking, and diagnostics consistent across environments
 
-**Trigger phrases:** "add AVM-style settings", "update settings/<env>", "add storage settings", "add key vault settings", "private endpoint IP selection", "align with AVM patterns".
+**Trigger phrases:** "add AVM-style settings", "update settings/<env>", "add storage settings", "add key vault settings", "private endpoint IP selection", "align with AVM patterns", "mirroring configuration".
 
 **Do not use for:** writing module code (use module skills), CI/CD fixes (use GitHub Actions Terraform skill), or provider upgrades (use provider upgrade skill).
 
