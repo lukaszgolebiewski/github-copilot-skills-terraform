@@ -20,6 +20,14 @@ Use this skill to add or update settings for resources that follow Azure Verifie
 
 **Do not use for:** writing module code (use module skills), CI/CD fixes (use GitHub Actions Terraform skill), or provider upgrades (use provider upgrade skill).
 
+## CRITICAL: Sub-Skill Reference
+**ALWAYS READ** `referances/azure-verfied-modules-settings-new-resource` when:
+- Adding a new resource instance (e.g., new storage account, AI Search, MS Foundry, Key Vault)
+- Mirroring/copying configuration between environments
+- Need comprehensive layer-by-layer context gathering checklist
+
+The sub-skill contains the complete multi-layer architecture diagram and detailed workflow.
+
 ## When to Use
 - Adding a new instance of an existing module/resource (e.g., new storage account, key vault, app insights) in an environment.
 - Updating settings (e.g., SKU, networking, tags, diagnostics) for existing resources.
@@ -41,6 +49,9 @@ Use this skill to add or update settings for resources that follow Azure Verifie
 - Golden paths span layers (storage/adf/kv/mi). Always consider upstream dependencies (RG, KV, MI, subnets, diagnostics) before editing a service folder.
 
 ## Standard Workflow (fast path)
+
+**IMPORTANT**: For detailed multi-layer architecture and new resource workflows, consult the sub-skill reference: `referances/azure-verfied-modules-settings-new-resource`. It contains comprehensive layer-by-layer inspection checklists.
+
 1) **Scope & inputs**: identify resource type, environment(s), RG, subnet/PE needs, identity, diagnostics, SKU, tags.
 
 2) **Multi-layer context gathering** (CRITICAL — NEVER skip):
