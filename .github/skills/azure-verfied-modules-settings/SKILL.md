@@ -1,9 +1,9 @@
 ---
 name: azure-verfied-modules-settings
-description: Scaffold for adding and updating settings for Azure Verified Module–inspired resources across environments (dev/snd/test/prod) in this repo.
+description: Scaffold for adding and updating settings for Azure Verified Module–inspired resources across environments (dev/snd/test/prod) in this repo. USE FOR mirroring/copying configurations between environments, adding new resource instances (storage, key vault, AI Search, MS Foundry, app insights), updating SKUs/networking/RBAC, and ensuring cross-environment consistency.
 metadata:
   author: github-copilot-skills-terraform
-  version: "0.2.0"
+  version: "0.2.1"
   category: terraform-azure-settings
 ---
 
@@ -16,7 +16,7 @@ Use this skill to add or update settings for resources that follow Azure Verifie
 - verify private endpoint IP allocations before committing changes
 - keep naming, tagging, identity, networking, and diagnostics consistent across environments
 
-**Trigger phrases:** "add AVM-style settings", "update settings/<env>", "add storage settings", "add key vault settings", "private endpoint IP selection", "align with AVM patterns", "mirroring configuration".
+**Trigger phrases:** "add AVM-style settings", "update settings/<env>", "add storage settings", "add key vault settings", "add AI Search settings", "add MS Foundry settings", "add application insights settings", "private endpoint IP selection", "align with AVM patterns", "mirror configuration", "mirroring configuration", "copy configuration from test to prod", "copy from test", "mirror from test", "replicate configuration", "duplicate settings", "prepare mirror", "configure in prod", "add to prod", "same configuration in prod".
 
 **Do not use for:** writing module code (use module skills), CI/CD fixes (use GitHub Actions Terraform skill), or provider upgrades (use provider upgrade skill).
 
