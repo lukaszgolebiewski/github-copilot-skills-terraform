@@ -22,7 +22,7 @@ Focused guide to add a **new instance** of an existing AVM-inspired resource/mod
   - `app-ins.tf` / `la.tf` — monitoring resources and links
   - `main.tf` — shared locals, common data
 - `settings/<env>/<service>/` — service-specific resource definitions + imports
-- `settings/<env>/global/` — project/global locals, backend, feature toggles
+- `settings/<env>/global/` — project/global locals, backend, feature toggless
 
 ## Workflow
 1) **Study patterns**: Review `.github/skills/azure-verified-modules` (SKILL + references) for security defaults, validation, naming, outputs.
@@ -54,7 +54,8 @@ Focused guide to add a **new instance** of an existing AVM-inspired resource/mod
 - Use Terraform MCP tools to recall AVM patterns or provider docs.
 
 ## Template Steps (per resource)
-- Update `core` only if new shared asset is required (RG/MI/KV/diag/ad group).
+- Always check `core` and `bootstrap` but update only if new shared asset is required (RG/MI/KV/diag/ad group).
+- For mirroring configuration always check configuration in all setting folders (.`storage`, `adf` etc.)
 - Add/extend map/object in the target service `*.tf` for the new instance.
 - Wire variables/defaults in `variables.tf`; outputs in `outputs.tf` if needed.
 - Ensure imports (`import.tfsettings-*.tf`) remain correct.
