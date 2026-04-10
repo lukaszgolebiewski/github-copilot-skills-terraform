@@ -42,23 +42,43 @@ Use this skill to add or update settings for resources that follow Azure Verifie
 
 ## Standard Workflow (fast path)
 1) **Scope & inputs**: identify resource type, environment(s), RG, subnet/PE needs, identity, diagnostics, SKU, tags.
-2) **Cross-env diff**: open the same service in another environment to mirror defaults; note intentional differences.
-3) **Discover existing state**: inspect `settings/<env>/{core,global,service}/`; reuse RGs, identities, KV secrets, diagnostic workspaces.
+
+2) **Multi-layer context gathering** (CRITICAL — NEVER skip):
+   - **Core layer**: Check `settings/<env>/core/` for RG, MI, KV, diagnostics (LA/App Insights), AD groups, networking
+   - **Global layer**: Check `settings/<env>/global/` for project settings, feature flags, backend config
+   - **ALL dependency layers**: Check EVERY related service folder:
+     - `storage/` — storage accounts, containers, file shares
+     - `acr/` — container registries
+     - `adf/` — data integration patterns
+     - `ai-search/`, `batch-account/`, `ml-studio/`, `ms-foundry/`, etc.
+   - **Target service layer**: Finally check the target service folder itself
+   - **WHY**: Services are configured at different levels. A web app may need RG (core), MI (core), storage (storage/), ACR image (acr/), App Insights (core). Missing ANY layer = incomplete config.
+
+3) **Cross-env mirror**: Check the SAME resource type across ALL layers in another environment (e.g., dev → snd); note intentional differences vs. patterns to copy.
+
 4) **Plan placements**:
   - Shared prerequisites (RG/MI/KV/App Insights/AD groups) → `settings/<env>/core/*.tf` (or bootstrap if truly global).
   - Service-specific settings → `settings/<env>/<service>/`.
   - Never duplicate RG/KV/MI; extend locals/variables instead.
+
 5) **Networking/PE IPs**: check current subnet allocations; pick next free IP; align DNS zone links; enforce TLS 1.2+, private endpoints when supported.
+
 6) **Security & governance**: ensure managed identity over secrets; apply required tags; lock down public access; enable diagnostics to Log Analytics/App Insights.
+
 7) **Variables/outputs**: add/update variable defaults and outputs if new settings are consumed elsewhere; keep descriptions mandatory.
+
 8) **Validation**: `terraform fmt -recursive` (scope to touched folder), `terraform validate`, and (when requested) env-scoped `terraform plan`.
+
 9) **Docs**: note deviations from AVM defaults in comments or README within the service folder.
 
 ## Checklists
-**Before editing**
-- [ ] Identify resource + environment(s)
-- [ ] Locate existing RG/KV/MI/diagnostics to reuse
-- [ ] Compare with another environment’s settings
+**Before editing (Multi-Layer Verification)**
+- [ ] Identify resource type + environment(s)
+- [ ] Check CORE layer: `settings/<env>/core/` (RG, MI, KV, LA, App Insights, AD groups, networking)
+- [ ] Check GLOBAL layer: `settings/<env>/global/` (project settings, feature flags)
+- [ ] Check ALL dependency service layers (storage, acr, adf, ai-search, batch, ml-studio, ms-foundry, etc.)
+- [ ] Check TARGET service layer: `settings/<env>/<target-service>/`
+- [ ] Cross-env mirror: Repeat ALL layer checks in reference environment
 - [ ] Confirm subnet and PE IP availability
 
 **While editing**

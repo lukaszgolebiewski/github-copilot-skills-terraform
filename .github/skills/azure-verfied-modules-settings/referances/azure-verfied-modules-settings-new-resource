@@ -2,6 +2,41 @@
 
 Focused guide to add a **new instance** of an existing AVM-inspired resource/module configuration in `settings/<env>/`.
 
+## Multi-Layer Architecture Overview
+
+```
+Azure Resource Configuration Layers (settings/<env>/)
+═══════════════════════════════════════════════════
+
+Layer 1: GLOBAL
+└─── global/ (project-wide settings, feature toggles, backend)
+
+Layer 2: CORE (Shared Foundations)
+├─── core/resource-groups.tf
+├─── core/user-managed-identities.tf
+├─── core/kv.tf
+├─── core/la.tf
+├─── core/app-ins.tf
+├─── core/ad-groups.tf
+└─── core/ (networking: VNets, subnets, DNS)
+
+Layer 3: SERVICE DEPENDENCIES (Check ALL that apply)
+├─── storage/ (storage accounts, containers, file shares)
+├─── acr/ (container registries)
+├─── adf/ (data pipelines)
+├─── ai-search/ (search services)
+├─── batch-account/ (batch compute)
+├─── ml-studio/ (ML workspaces)
+├─── ms-foundry/ (AI services)
+└─── other services...
+
+Layer 4: TARGET SERVICE
+└─── <target-service>/ (final resource configuration)
+
+CRITICAL RULE: Check layers 1→2→3→4 in order, ALWAYS.
+Cross-environment: Repeat for reference env (dev/snd/test/prod).
+```
+
 ## Inputs to Collect
 - Environment(s): dev/snd/test/prod
 - Resource type & service folder (e.g., storage, acr, ai-search)
@@ -26,20 +61,53 @@ Focused guide to add a **new instance** of an existing AVM-inspired resource/mod
 
 ## Workflow
 1) **Study patterns**: Review `.github/skills/azure-verified-modules` (SKILL + references) for security defaults, validation, naming, outputs.
-2) **Assess existing env**: Inspect `settings/<env>/core/*.tf`, `global/*.tf`, and the target service folder for reuse opportunities (RG, MI, KV, diagnostics).
-3) **Plan placements**:
+
+2) **Multi-layer context gathering** (CRITICAL - always perform ALL steps):
+   - **Step 2a - Core layer**: Inspect `settings/<env>/core/*.tf` for shared foundations:
+     - `resource-groups.tf` — available RGs to reuse
+     - `user-managed-identities.tf` — available UAIs
+     - `kv.tf` — Key Vault entries and access patterns
+     - `la.tf` + `app-ins.tf` — diagnostics targets
+     - `ad-groups.tf` — RBAC group patterns
+   - **Step 2b - Global layer**: Check `settings/<env>/global/*.tf` for:
+     - Project-wide locals and feature toggles
+     - Backend configuration patterns
+     - Environment-specific overrides
+   - **Step 2c - Dependency layers**: For EVERY resource type, check ALL related service folders:
+     - **Storage** (`settings/<env>/storage/`) — storage accounts, containers, file shares used by the resource
+     - **ACR** (`settings/<env>/acr/`) — container registry access if deploying containerized workloads
+     - **Networking** (may be in `core/` or separate) — VNets, subnets, private endpoints, DNS zones
+     - **ADF** (`settings/<env>/adf/`) — data integration patterns if data pipelines involved
+     - **AI Search** (`settings/<env>/ai-search/`) — search service dependencies
+     - **Batch** (`settings/<env>/batch-account/`) — batch job patterns if compute workloads
+     - **ML Studio** (`settings/<env>/ml-studio/`) — ML workspace integration
+     - **MS Foundry** (`settings/<env>/ms-foundry/`) — AI services integration
+   - **Step 2d - Target service layer**: Finally inspect the target service folder itself
+   - **WHY**: Resources span layers. A web app may need: RG (core), MI (core), KV secrets (core), storage account (storage/), ACR image (acr/), App Insights (core), subnets (core/networking). Missing ANY layer check = incomplete config.
+
+3) **Cross-environment mirror check** (for consistency):
+   - Before adding to target env, check the SAME resource type in another env (e.g., dev → snd)
+   - Scan ALL the same layers (core, global, storage, acr, target service) in the reference env
+   - Note patterns: naming, tags, SKU progression, networking, diagnostics wiring
+   - Identify intentional differences vs copy-forward patterns
+
+4) **Plan placements**:
    - Shared foundations go to `core/` (RGs, UAIs, KV entries, diagnostics, ad groups) only if missing.
    - Service-specific config goes under the service folder (e.g., `storage/storage.tf`, `acr/acr.tf`).
    - Avoid duplicating existing RG/KV/MI; extend maps/objects instead.
-4) **Private endpoints & IPs**:
+
+5) **Private endpoints & IPs**:
    - Check current PEs/IPs in the target env subnet (scan existing files or query Azure via MCP). Select next free IP; double-check uniqueness.
-5) **Implement with AVM-aligned defaults** (examples):
+
+6) **Implement with AVM-aligned defaults** (examples):
    - Enforce `public_network_access_enabled = false` where applicable.
    - `min_tls_version = "TLS1_2"`; `https_traffic_only_enabled = true` (storage/app services)
    - Managed identity preferred; no hardcoded secrets; use Key Vault data sources.
    - Diagnostics to Log Analytics; enable metrics/log categories per service.
-6) **Variables/outputs**: Add inputs/outputs as needed; keep descriptions and validation; ensure required tags.
-7) **Validate**: Run `terraform fmt -recursive` and `terraform validate` in the env folder; produce plan if required.
+
+7) **Variables/outputs**: Add inputs/outputs as needed; keep descriptions and validation; ensure required tags.
+
+8) **Validate**: Run `terraform fmt -recursive` and `terraform validate` in the env folder; produce plan if required.
 
 ## Good Practices (quick list)
 - Naming: `{type}-{workload}-{env}-{region}-{instance}`.
@@ -49,13 +117,106 @@ Focused guide to add a **new instance** of an existing AVM-inspired resource/mod
 - Use `for_each` for maps of instances in service files.
 - Keep plan artifacts per env (dev/snd/test/prod) out of edits unless regenerating.
 
+## Multi-Layer Verification Checklist
+
+**Before making ANY changes, verify you have checked ALL applicable layers:**
+
+### Core Layer (ALWAYS check)
+- [ ] `settings/<env>/core/resource-groups.tf` — RG existence and naming
+- [ ] `settings/<env>/core/user-managed-identities.tf` — MI availability and roles
+- [ ] `settings/<env>/core/kv.tf` — Key Vault entries and access policies
+- [ ] `settings/<env>/core/la.tf` — Log Analytics workspace
+- [ ] `settings/<env>/core/app-ins.tf` — Application Insights
+- [ ] `settings/<env>/core/ad-groups.tf` — AD groups for RBAC
+- [ ] `settings/<env>/core/` (networking files) — VNets, subnets, DNS zones
+
+### Global Layer (ALWAYS check)
+- [ ] `settings/<env>/global/` — project locals, backend, feature toggles
+
+### Service Dependency Layers (check based on resource type)
+- [ ] `settings/<env>/storage/` — if resource needs storage accounts, containers, file shares
+- [ ] `settings/<env>/acr/` — if resource needs container images
+- [ ] `settings/<env>/adf/` — if resource involves data pipelines
+- [ ] `settings/<env>/ai-search/` — if resource uses search indexing
+- [ ] `settings/<env>/batch-account/` — if resource uses batch compute
+- [ ] `settings/<env>/ml-studio/` — if resource integrates with ML workspace
+- [ ] `settings/<env>/ms-foundry/` — if resource uses AI services
+- [ ] `settings/<env>/linux-web-app/` — if related to web app deployments
+- [ ] Other service folders as applicable
+
+### Target Service Layer (ALWAYS check last)
+- [ ] `settings/<env>/<target-service>/` — existing instances and patterns
+
+### Cross-Environment Mirror (ALWAYS check)
+- [ ] Repeat ALL above checks in reference environment (dev/snd/test/prod)
+- [ ] Document differences between environments (intentional vs. oversight)
+
+**FAIL FAST**: If you skip ANY applicable layer, the configuration will be incomplete. Always err on the side of checking too many layers.
+
 ## MCP / External Checks
 - Use Azure MCP servers to confirm free private IPs and existing PEs when uncertain.
 - Use Terraform MCP tools to recall AVM patterns or provider docs.
 
+## Multi-Layer Dependency Examples
+
+### Example 1: Adding a Linux Web App
+**Layers to check (in order):**
+1. `settings/<env>/core/resource-groups.tf` — RG for web app
+2. `settings/<env>/core/user-managed-identities.tf` — MI for app identity
+3. `settings/<env>/core/kv.tf` — connection string secrets to store
+4. `settings/<env>/core/app-ins.tf` — App Insights for telemetry
+5. `settings/<env>/core/la.tf` — Log Analytics for diagnostics
+6. `settings/<env>/storage/` — storage account for app data/logs
+7. `settings/<env>/acr/` — container registry if deploying containerized app
+8. `settings/<env>/core/` (networking) — subnet for VNet integration + private endpoints
+9. `settings/<env>/linux-web-app/` — finally, the web app config itself
+
+**Why all layers?** Web app needs RG (1), runs with MI (2), stores secrets in KV (3), sends telemetry to App Insights (4), logs to LA (5), may use storage (6), pulls images from ACR (7), integrates with VNet (8).
+
+### Example 2: Adding a Batch Account
+**Layers to check:**
+1. `settings/<env>/core/resource-groups.tf`
+2. `settings/<env>/core/user-managed-identities.tf`
+3. `settings/<env>/core/kv.tf`
+4. `settings/<env>/core/la.tf`
+5. `settings/<env>/storage/` — **CRITICAL**: Batch requires linked storage account
+6. `settings/<env>/acr/` — if using container pools
+7. `settings/<env>/core/` (networking) — subnet for pools
+8. `settings/<env>/batch-account/` — batch config
+
+### Example 3: Adding an AI Search Service
+**Layers to check:**
+1. `settings/<env>/core/resource-groups.tf`
+2. `settings/<env>/core/user-managed-identities.tf`
+3. `settings/<env>/core/kv.tf`
+4. `settings/<env>/core/la.tf`
+5. `settings/<env>/storage/` — indexer data sources
+6. `settings/<env>/ms-foundry/` — AI service integration
+7. `settings/<env>/core/` (networking) — private endpoints
+8. `settings/<env>/ai-search/` — search service config
+
 ## Template Steps (per resource)
-- Always check `core` and `bootstrap` but update only if new shared asset is required (RG/MI/KV/diag/ad group).
-- For mirroring configuration always check configuration in all setting folders (.`storage`, `adf` etc.)
-- Add/extend map/object in the target service `*.tf` for the new instance.
-- Wire variables/defaults in `variables.tf`; outputs in `outputs.tf` if needed.
-- Ensure imports (`import.tfsettings-*.tf`) remain correct.
+
+### Pre-flight (MANDATORY multi-layer check)
+1. **Identify resource type** and list ALL dependency layers (use examples above as template)
+2. **Check core layer**: `settings/<env>/core/` — RG, MI, KV, diagnostics (LA/App Insights), AD groups, networking
+3. **Check global layer**: `settings/<env>/global/` — project settings, feature flags
+4. **Check ALL related service layers**:
+   - Storage: `settings/<env>/storage/` 
+   - ACR: `settings/<env>/acr/`
+   - ADF: `settings/<env>/adf/`
+   - AI Search: `settings/<env>/ai-search/`
+   - Batch: `settings/<env>/batch-account/`
+   - ML Studio: `settings/<env>/ml-studio/`
+   - MS Foundry: `settings/<env>/ms-foundry/`
+   - Other services as needed
+5. **Check target service layer**: `settings/<env>/<target-service>/`
+6. **Cross-env mirror**: Repeat steps 2-5 for reference environment (e.g., if adding to `test`, check `dev` or `snd` first)
+
+### Implementation
+7. **Update only if missing**: Add to `core/` (RG/MI/KV/diag/ad group) only if truly new shared asset
+8. **Update service folders**: Extend configurations in related service folders (storage, ACR, etc.) if new dependencies
+9. **Add target config**: Add/extend map/object in target service `*.tf` for the new instance
+10. **Wire connections**: Update variables/defaults in `variables.tf`; add outputs in `outputs.tf` if consumed elsewhere
+11. **Validate imports**: Ensure `import.tfsettings-*.tf` files remain correct
+12. **Format & validate**: Run `terraform fmt -recursive` and `terraform validate`
