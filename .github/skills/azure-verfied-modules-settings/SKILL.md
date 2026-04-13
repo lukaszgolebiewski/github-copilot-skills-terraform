@@ -94,6 +94,8 @@ The sub-skill contains the complete multi-layer architecture diagram and detaile
 
 **While editing**
 - [ ] Place shared bits in `core/` (or bootstrap), service bits in service folder
+- [] If adding new resource instasnce, make sure to put corresponding configuration in core and bootstrap if needed (RG, MI, KV, diagnostics, AD groups)
+- always check AD groups if created
 - [ ] Keep naming `{type}-{workload}-{env}-{region}-{instance}`
 - [ ] Add/keep required tags on all resources
 - [ ] Prefer managed identity; avoid secrets
