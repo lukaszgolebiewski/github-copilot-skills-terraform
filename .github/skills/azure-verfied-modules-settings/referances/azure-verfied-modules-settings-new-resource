@@ -161,17 +161,40 @@ Cross-environment: Repeat for reference env (dev/snd/test/prod).
 
 ### Example 1: Adding a Linux Web App
 **Layers to check (in order):**
-1. `settings/<env>/core/resource-groups.tf` — RG for web app
-2. `settings/<env>/core/user-managed-identities.tf` — MI for app identity
-3. `settings/<env>/core/kv.tf` — connection string secrets to store
-4. `settings/<env>/core/app-ins.tf` — App Insights for telemetry
-5. `settings/<env>/core/la.tf` — Log Analytics for diagnostics
-6. `settings/<env>/storage/` — storage account for app data/logs
-7. `settings/<env>/acr/` — container registry if deploying containerized app
-8. `settings/<env>/core/` (networking) — subnet for VNet integration + private endpoints
-9. `settings/<env>/linux-web-app/` — finally, the web app config itself
+1. **Core layer** — `settings/<env>/core/`:
+   - `resource-groups.tf` — RG for web app
+   - `user-managed-identities.tf` — MI for app identity
+   - `kv.tf` — connection string secrets to store
+   - `app-ins.tf` — App Insights for telemetry
+   - `la.tf` — Log Analytics for diagnostics (if separate from app-ins.tf)
+   - `ad-groups.tf` — AD groups for RBAC/ownership
+   - `main.tf` — shared locals and data sources
+2. **Storage layer** — `settings/<env>/storage/`:
+   - `storage.tf` — storage account for app data/logs/deployment packages
+3. **ACR layer** — `settings/<env>/acr/` (if containerized):
+   - Container registry configuration for pulling images
+4. **Networking layer** — usually in `settings/<env>/core/`:
+   - Subnet for VNet integration + private endpoints
+   - DNS zones for private DNS resolution
+5. **Target service layer** — `settings/<env>/linux-web-app/`:
+   - `linux-web-apps.tf` — finally, the web app configuration itself
 
-**Why all layers?** Web app needs RG (1), runs with MI (2), stores secrets in KV (3), sends telemetry to App Insights (4), logs to LA (5), may use storage (6), pulls images from ACR (7), integrates with VNet (8).
+**Why all layers?** Web app needs:
+- RG (core/resource-groups.tf)
+- MI for app identity (core/user-managed-identities.tf)
+- KV secrets for connection strings (core/kv.tf)
+- App Insights telemetry (core/app-ins.tf)
+- Log Analytics diagnostics (core/la.tf or app-ins.tf)
+- AD groups for permissions (core/ad-groups.tf)
+- Storage account for data/logs (storage/storage.tf)
+- ACR for container images if containerized (acr/)
+- VNet/subnet integration (core/networking)
+- Web app instance config (linux-web-app/linux-web-apps.tf)
+
+**CRITICAL Configuration Files:**
+- Core: `ad-groups.tf`, `app-ins.tf`, `kv.tf`, `main.tf`, `resource-groups.tf`, `user-managed-identities.tf`
+- Linux Web App: `linux-web-apps.tf`
+- Storage: `storage.tf`
 
 ### Example 2: Adding a Batch Account
 **Layers to check:**
